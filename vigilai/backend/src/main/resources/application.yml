@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: vigilai-backend
+
+  datasource:
+    url: jdbc:h2:mem:vigilai;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+    # For real use, swap to MySQL:
+    # url: jdbc:mysql://localhost:3306/vigilai
+    # driver-class-name: com.mysql.cj.jdbc.Driver
+    # username: ${DB_USERNAME:root}
+    # password: ${DB_PASSWORD:root}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  security:
+    oauth2:
+          client:
+            registration:
+              google:
+                client-id: ${GOOGLE_CLIENT_ID:demo-client-id}
+                client-secret: ${GOOGLE_CLIENT_SECRET:demo-client-secret}
+                scope: [ profile, email ]
+              github:
+                client-id: ${GITHUB_CLIENT_ID:demo-client-id}
+                client-secret: ${GITHUB_CLIENT_SECRET:demo-client-secret}
+                scope: [ read:user, user:email ]
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  jwt:
+    secret: ${JWT_SECRET:change-this-to-a-long-random-secret-in-prod-please}
+    access-token-expiry-ms: 900000        # 15 minutes
+    refresh-token-expiry-ms: 604800000    # 7 days
+  verification-token-expiry-ms: 86400000  # 24 hours
+  reset-token-expiry-ms: 1800000          # 30 minutes
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

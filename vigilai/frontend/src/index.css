@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid theme('colors.signal.teal');
+    outline-offset: 2px;
+  }
+}
