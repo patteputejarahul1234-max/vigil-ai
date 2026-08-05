@@ -1,5 +1,21 @@
-target/
-node_modules/
-dist/
+# Build output
+backend/target/
+frontend/dist/
+frontend/node_modules/
+
+# Local runtime data — never commit uploaded files or logs
+backend/uploads/
+backend/logs/
+logs/
+
+# Env files with secrets
 .env
-*.class
+frontend/.env
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store

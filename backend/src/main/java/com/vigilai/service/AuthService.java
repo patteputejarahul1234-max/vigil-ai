@@ -7,6 +7,8 @@ import com.vigilai.repository.PasswordResetTokenRepository;
 import com.vigilai.repository.UserRepository;
 import com.vigilai.repository.VerificationTokenRepository;
 import com.vigilai.security.JwtService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -20,6 +22,8 @@ import java.util.UUID;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserRepository userRepository;
     private final VerificationTokenRepository verificationTokenRepository;
@@ -70,6 +74,7 @@ public class AuthService {
 
         user = userRepository.save(user);
         issueVerificationToken(user);
+        log.info("New user registered: userId={} email={}", user.getId(), user.getEmail());
 
         return toProfileResponse(user);
     }
@@ -81,12 +86,14 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
         } catch (Exception ex) {
+            log.warn("Failed login attempt for email={}", request.getEmail());
             throw new BadCredentialsException("Invalid email or password");
         }
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> ApiException.notFound("User not found"));
 
+        log.info("Login succeeded: userId={} email={}", user.getId(), user.getEmail());
         return buildAuthResponse(user);
     }
 

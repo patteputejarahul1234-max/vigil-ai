@@ -6,6 +6,8 @@ import com.vigilai.exception.ApiException;
 import com.vigilai.repository.UserRepository;
 import com.vigilai.repository.WorkspaceMemberRepository;
 import com.vigilai.repository.WorkspaceRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,6 +66,7 @@ public class WorkspaceService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "workspaces", key = "#workspaceId")
     public WorkspaceResponse getById(Long workspaceId, Long requesterId) {
         assertMember(workspaceId, requesterId);
         Workspace workspace = workspaceRepository.findById(workspaceId)
@@ -72,6 +75,7 @@ public class WorkspaceService {
     }
 
     @Transactional
+    @CacheEvict(value = "workspace-members", key = "#workspaceId")
     public WorkspaceMemberResponse invite(Long workspaceId, Long inviterId, InviteMemberRequest request) {
         assertRole(workspaceId, inviterId, WorkspaceRole.ADMIN);
 
@@ -106,6 +110,7 @@ public class WorkspaceService {
                 .build();
     }
 
+    @Cacheable(value = "workspace-members", key = "#workspaceId")
     public List<WorkspaceMemberResponse> getMembers(Long workspaceId, Long requesterId) {
         assertMember(workspaceId, requesterId);
 

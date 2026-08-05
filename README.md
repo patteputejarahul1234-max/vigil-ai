@@ -96,11 +96,62 @@ stage is a one-file change.
 Add `backend/uploads/` to your `.gitignore` — uploaded files shouldn't
 be committed.
 
+## Stage 3 (Production Ready) — added
+
+**Run everything with Docker (recommended way to try Stage 3):**
+```bash
+docker compose up --build
+```
+This starts MySQL, Redis, the backend, and the frontend together —
+backend on :8080, frontend on :5173. First run takes a few minutes
+(image builds); after that it's fast.
+
+**Or keep running locally without Docker** (`mvn spring-boot:run` +
+`npm run dev`) — nothing about local dev changed. Cache defaults to
+in-memory (no Redis needed) unless you explicitly set `CACHE_TYPE=redis`.
+
+**Redis Cache** — workspace lookups, member lists, and analytics are
+cached (`CacheConfig`), with eviction wired into every write path so
+cached data never goes stale. TTLs: workspaces 10min, members 5min,
+analytics 2min.
+
+**Swagger** — visit `/swagger-ui.html`, click **Authorize**, paste an
+`accessToken` from `/api/auth/login`, and every protected endpoint
+becomes testable from the browser.
+
+**JUnit** — run tests with:
+```bash
+cd backend
+mvn test
+```
+Covers: JWT generation/validation/expiry (`JwtServiceTest`),
+registration/login business rules (`AuthServiceTest`), workspace
+access-control rules (`WorkspaceServiceTest`), and a full
+register→verify→login→protected-route integration test
+(`AuthFlowIntegrationTest`) against a real Spring context + H2.
+
+**Logging** — structured logs to console + `backend/logs/vigilai.log`
+(rotated daily, 14-day retention). Every request logs method/path/
+status/duration. Set `VIGILAI_LOG_LEVEL=DEBUG` for more detail locally.
+
+**Email Service** — now `@Async`; a slow/misconfigured SMTP server
+never blocks a request.
+
+**Cloud Deployment** — two new Spring profiles:
+- `docker` (`application-docker.yml`) — used automatically by
+  docker-compose, points at real MySQL/Redis by service name.
+- `prod` (`application-prod.yml`) — for platforms like Render/Railway
+  that inject `DB_URL`/`REDIS_HOST` directly without docker-compose.
+  Uses `ddl-auto: validate` instead of `update` — for a real
+  production deploy you'd want Flyway/Liquibase migrations instead of
+  Hibernate auto-DDL; that's a good Stage 5 addition, not done here.
+
 ## What's deliberately not here yet
-Redis, Docker, JUnit tests, refresh-token rotation endpoint, and rate
-limiting are Stage 3. Kanban drag-and-drop (currently a dropdown) and
-richer task detail (comments, subtasks) are UI polish for later —
-Stage 2's job was to get the data model and access control right.
+Kafka, Kubernetes, CI/CD pipelines, and multi-service split are Stage 5.
+Database migrations (Flyway/Liquibase) would be a natural next step
+before a real production deploy — Stage 3 uses Hibernate's `ddl-auto`
+for simplicity, which is fine for a portfolio project but not what
+you'd want managing a real production schema long-term.
 
 ## Note on verifying this build
 This was written and reviewed without a live Maven/npm environment (no

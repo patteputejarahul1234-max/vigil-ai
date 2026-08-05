@@ -1,0 +1,38 @@
+# Activated via SPRING_PROFILES_ACTIVE=prod for a managed cloud deploy
+# (Render, Railway, Fly.io, AWS, etc.) that isn't using docker-compose —
+# i.e. a platform that gives you a managed MySQL/Postgres + Redis
+# instance and injects connection details as env vars.
+#
+# Most platforms give a single DATABASE_URL rather than separate
+# host/user/password — set DB_URL/DB_USERNAME/DB_PASSWORD to whatever
+# your provider calls them, or adjust the keys below to match.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # never auto-alter a real prod schema; use migrations instead
+    show-sql: false
+
+  h2:
+    console:
+      enabled: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+  cache:
+    type: redis
+
+app:
+  frontend-url: ${FRONTEND_URL}
+
+logging:
+  level:
+    com.vigilai: INFO

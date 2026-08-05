@@ -6,6 +6,7 @@ import com.vigilai.entity.Task;
 import com.vigilai.entity.TaskStatus;
 import com.vigilai.repository.ProjectRepository;
 import com.vigilai.repository.TaskRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -27,6 +28,7 @@ public class AnalyticsService {
         this.workspaceService = workspaceService;
     }
 
+    @Cacheable(value = "analytics", key = "#workspaceId")
     public AnalyticsResponse getForWorkspace(Long workspaceId, Long userId) {
         workspaceService.assertMember(workspaceId, userId);
 

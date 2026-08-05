@@ -1,0 +1,18 @@
+# Activated via SPRING_PROFILES_ACTIVE=docker (set by docker-compose.yml).
+# Swaps the in-memory H2 database for real MySQL, and points Redis at
+# the "redis" service name instead of localhost.
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:mysql}:3306/vigilai?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:vigilai}
+    password: ${DB_PASSWORD:vigilai_dev_password}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.MySQLDialect
+
+  h2:
+    console:
+      enabled: false

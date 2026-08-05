@@ -9,6 +9,7 @@ import com.vigilai.repository.ProjectRepository;
 import com.vigilai.repository.TaskAttachmentRepository;
 import com.vigilai.repository.TaskRepository;
 import com.vigilai.repository.TaskSpecifications;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ public class TaskService {
     private final WorkspaceService workspaceService;
     private final NotificationService notificationService;
     private final ActivityLogService activityLogService;
+    private final CacheManager cacheManager;
 
     public TaskService(
             TaskRepository taskRepository,
@@ -31,7 +33,8 @@ public class TaskService {
             TaskAttachmentRepository attachmentRepository,
             WorkspaceService workspaceService,
             NotificationService notificationService,
-            ActivityLogService activityLogService
+            ActivityLogService activityLogService,
+            CacheManager cacheManager
     ) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
@@ -39,6 +42,13 @@ public class TaskService {
         this.workspaceService = workspaceService;
         this.notificationService = notificationService;
         this.activityLogService = activityLogService;
+        this.cacheManager = cacheManager;
+    }
+
+    /** Analytics numbers change on every task write, so evict rather than let the TTL alone handle it. */
+    private void evictAnalytics(Long workspaceId) {
+        var cache = cacheManager.getCache("analytics");
+        if (cache != null) cache.evict(workspaceId);
     }
 
     @Transactional
@@ -65,6 +75,7 @@ public class TaskService {
 
         activityLogService.log(project.getWorkspaceId(), userId, "TASK_CREATED", "TASK", task.getId(),
                 "Created task \"" + task.getTitle() + "\"");
+        evictAnalytics(project.getWorkspaceId());
 
         return toResponse(task);
     }
@@ -115,6 +126,7 @@ public class TaskService {
                     "You were assigned to \"" + task.getTitle() + "\"", "TASK", task.getId());
         }
 
+        evictAnalytics(project.getWorkspaceId());
         return toResponse(task);
     }
 
@@ -127,6 +139,7 @@ public class TaskService {
         taskRepository.delete(task);
         activityLogService.log(project.getWorkspaceId(), userId, "TASK_DELETED", "TASK", taskId,
                 "Deleted task \"" + task.getTitle() + "\"");
+        evictAnalytics(project.getWorkspaceId());
     }
 
     /** Powers the Search & Filters feature — dynamic query across any combination of fields. */
