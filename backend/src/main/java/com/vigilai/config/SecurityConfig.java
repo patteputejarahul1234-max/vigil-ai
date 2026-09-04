@@ -45,12 +45,13 @@ public class SecurityConfig {
     }
 
     private static final String[] PUBLIC_ROUTES = {
-            "/api/auth/**",
-            "/oauth2/**",
-            "/login/oauth2/**",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/h2-console/**"
+        "/api/auth/**",
+        "/oauth2/**",
+        "/login/oauth2/**",
+        "/swagger-ui.html",
+        "/swagger-ui/**",
+        "/v3/api-docs/**",
+        "/h2-console/**"
     };
 
     @Bean
