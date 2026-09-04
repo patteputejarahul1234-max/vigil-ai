@@ -158,3 +158,39 @@ This was written and reviewed without a live Maven/npm environment (no
 network access in this session), so run `mvn clean compile` and
 `npm run build` locally before you push — flag anything that doesn't
 compile and it can be fixed directly.
+
+## Stage 4 (AI Integration) — Proof of Execution added
+
+**Proof of Execution** is the core AI feature: submit a photo as proof
+a task was actually completed, and Google Gemini Vision verifies it —
+not just a checkbox tap, an actual judgment call on whether the photo
+plausibly shows the task being done.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | /api/tasks/{taskId}/proof | Submit a photo; AI verifies it and auto-completes the task if accepted |
+
+**How it works:** the photo is sent to Gemini in memory, verified, and
+never written to disk — only the verdict (`verified: true/false` + a
+one-sentence reason) is stored in the `proof_submission` table. This
+matches the original design goal of the feature: the photo itself is
+never retained, only proof that a check happened.
+
+**Setup required:** get a free API key from
+[Google AI Studio](https://aistudio.google.com/apikey), then set it as
+an environment variable before starting the backend (never commit it
+or hardcode it):
+```bash
+$env:GEMINI_API_KEY="your-key-here"   # PowerShell
+mvn spring-boot:run
+```
+Without a key set, proof submissions are safely auto-rejected with a
+clear message rather than the app crashing.
+
+**Verified working:** correctly rejects stock/reused photos ("this
+appears to be a stock photo rather than an original photo") and
+accepts genuine photos, auto-marking the task `DONE` on acceptance.
+
+**Not yet built:** AI Assistant, Smart Suggestions, Resume Analyzer,
+Learning Roadmap, and AI Project Documentation — the remaining Stage 4
+features, planned as a smaller follow-on addition.
