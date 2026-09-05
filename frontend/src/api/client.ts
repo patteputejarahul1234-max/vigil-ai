@@ -227,6 +227,17 @@ export const assistantApi = {
     api.post<AssistantAnswer>(`/api/workspaces/${workspaceId}/assistant/ask`, { question }),
 }
 
+export interface SmartSuggestion {
+  hasEnoughData: boolean
+  message: string
+  suggestedHourOfDay: number | null
+  completedCount: number
+}
+
+export const suggestionApi = {
+  getForTask: (taskId: number) => api.get<SmartSuggestion>(`/api/tasks/${taskId}/suggestions`),
+}
+
 export const notificationApi = {
   list: (unreadOnly = false) =>
     api.get<AppNotificationDto[]>('/api/notifications', { params: { unreadOnly } }),

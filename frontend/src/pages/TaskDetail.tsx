@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { fileApi, proofApi, ProofSubmissionResult, Task, taskApi, TaskAttachment } from '../api/client'
+import { fileApi, proofApi, ProofSubmissionResult, SmartSuggestion, suggestionApi, Task, taskApi, TaskAttachment } from '../api/client'
 import { AppShell } from '../components/AppShell'
 
 export default function TaskDetail() {
@@ -17,9 +17,13 @@ export default function TaskDetail() {
   const [proofResult, setProofResult] = useState<ProofSubmissionResult | null>(null)
   const proofInputRef = useRef<HTMLInputElement>(null)
 
+  // Smart Suggestions state
+  const [suggestion, setSuggestion] = useState<SmartSuggestion | null>(null)
+
   function load() {
     taskApi.get(id).then((res) => setTask(res.data))
     fileApi.listForTask(id).then((res) => setAttachments(res.data))
+    suggestionApi.getForTask(id).then((res) => setSuggestion(res.data))
   }
 
   useEffect(load, [id])
@@ -131,6 +135,20 @@ export default function TaskDetail() {
               <p className="mt-1 text-text-muted">{proofResult.aiReason}</p>
               {proofResult.verified && (
                 <p className="mt-1 text-xs text-text-muted">Task marked as Done.</p>
+              )}
+            </div>
+          )}
+
+          {suggestion && (
+            <div className="mt-4 rounded-lg px-4 py-3 bg-ink border border-ink-border text-sm">
+              <p className="text-xs text-signal-amber font-mono uppercase tracking-wide mb-1">
+                Smart Suggestion
+              </p>
+              <p className="text-text-muted">{suggestion.message}</p>
+              {suggestion.hasEnoughData && (
+                <p className="text-xs text-text-muted mt-1">
+                  Based on {suggestion.completedCount} verified completions.
+                </p>
               )}
             </div>
           )}
