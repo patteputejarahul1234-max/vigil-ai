@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vigilai-backend
+  labels:
+    app: vigilai-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vigilai-backend
+  template:
+    metadata:
+      labels:
+        app: vigilai-backend
+    spec:
+      containers:
+        - name: vigilai-backend
+          image: vigilai-backend:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "docker"
+            - name: DB_HOST
+              value: "mysql-service"
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: CACHE_TYPE
+              value: "redis"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: vigilai-secrets
+                  key: jwt-secret
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vigilai-secrets
+                  key: gemini-api-key
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vigilai-backend-service
+spec:
+  selector:
+    app: vigilai-backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
