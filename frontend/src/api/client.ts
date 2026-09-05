@@ -197,6 +197,27 @@ export const fileApi = {
   downloadUrl: (attachmentId: number) => `${API_BASE_URL}/api/files/${attachmentId}/download`,
 }
 
+// ---------- Stage 4: Proof of Execution ----------
+
+export interface ProofSubmissionResult {
+  id: number
+  taskId: number
+  verified: boolean
+  aiReason: string
+  taskStatus: string
+  submittedAt: string
+}
+
+export const proofApi = {
+  submit: (taskId: number, photo: File) => {
+    const formData = new FormData()
+    formData.append('photo', photo)
+    return api.post<ProofSubmissionResult>(`/api/tasks/${taskId}/proof`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+}
+
 export const notificationApi = {
   list: (unreadOnly = false) =>
     api.get<AppNotificationDto[]>('/api/notifications', { params: { unreadOnly } }),

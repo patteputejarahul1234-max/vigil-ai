@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { fileApi, proofApi, ProofSubmissionResult, Task, taskApi, TaskAttachment } from '../api/client'
 import { AppShell } from '../components/AppShell'
-import { fileApi, taskApi, Task, TaskAttachment } from '../api/client'
 
 export default function TaskDetail() {
   const { taskId } = useParams()
@@ -11,6 +11,11 @@ export default function TaskDetail() {
   const [attachments, setAttachments] = useState<TaskAttachment[]>([])
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Proof of Execution state
+  const [submittingProof, setSubmittingProof] = useState(false)
+  const [proofResult, setProofResult] = useState<ProofSubmissionResult | null>(null)
+  const proofInputRef = useRef<HTMLInputElement>(null)
 
   function load() {
     taskApi.get(id).then((res) => setTask(res.data))
@@ -35,6 +40,21 @@ export default function TaskDetail() {
   async function updateField(patch: Partial<Task>) {
     await taskApi.update(id, patch)
     load()
+  }
+
+  async function handleProofSubmit(e: React.ChangeEvent<HTMLInputElement>) {
+    const photo = e.target.files?.[0]
+    if (!photo) return
+    setSubmittingProof(true)
+    setProofResult(null)
+    try {
+      const res = await proofApi.submit(id, photo)
+      setProofResult(res.data)
+      if (res.data.verified) load() // refresh task so the status shown updates to DONE
+    } finally {
+      setSubmittingProof(false)
+      if (proofInputRef.current) proofInputRef.current.value = ''
+    }
   }
 
   if (!task) return <AppShell><p className="text-text-muted">Loading…</p></AppShell>
@@ -72,6 +92,51 @@ export default function TaskDetail() {
           </div>
         </div>
 
+        {/* --- Proof of Execution: the Stage 4 headline feature --- */}
+        <div className="bg-ink-surface border border-signal-teal/30 rounded-2xl p-6 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-display font-semibold flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-signal-teal animate-pulse" />
+              Proof of Execution
+            </h2>
+          </div>
+          <p className="text-text-muted text-sm mb-4">
+            Don't just check it off — submit a photo and let AI verify you actually did it.
+          </p>
+
+          <label className="inline-block bg-signal-teal text-ink font-semibold rounded-lg px-4 py-2.5 text-sm cursor-pointer hover:brightness-110 transition-all disabled:opacity-50">
+            {submittingProof ? 'Verifying with AI…' : 'Submit Proof Photo'}
+            <input
+              ref={proofInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleProofSubmit}
+              disabled={submittingProof}
+            />
+          </label>
+
+          {proofResult && (
+            <div
+              className={`mt-4 rounded-lg px-4 py-3 border text-sm ${
+                proofResult.verified
+                  ? 'bg-signal-teal/10 border-signal-teal/40 text-signal-teal'
+                  : 'bg-signal-danger/10 border-signal-danger/40 text-signal-danger'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-semibold">
+                {proofResult.verified ? '✓ Verified by AI' : '✗ Not verified'}
+              </div>
+              <p className="mt-1 text-text-muted">{proofResult.aiReason}</p>
+              {proofResult.verified && (
+                <p className="mt-1 text-xs text-text-muted">Task marked as Done.</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* --- Ordinary attachments, unrelated to proof verification --- */}
         <div className="bg-ink-surface border border-ink-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold">Attachments</h2>
@@ -82,7 +147,7 @@ export default function TaskDetail() {
           </div>
 
           {attachments.length === 0 ? (
-            <p className="text-text-muted text-sm">No files yet — this is where proof-of-execution photos will live in Stage 4.</p>
+            <p className="text-text-muted text-sm">No files yet.</p>
           ) : (
             <ul className="space-y-2">
               {attachments.map((a) => (

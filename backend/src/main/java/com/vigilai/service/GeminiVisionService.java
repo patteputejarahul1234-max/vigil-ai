@@ -68,8 +68,7 @@ public class GeminiVisionService {
                                         "data", base64Image
                                 ))
                         )
-                )),
-                "generationConfig", Map.of("response_mime_type", "application/json")
+                ))
         );
 
         String url = "https://generativelanguage.googleapis.com/v1beta/models/"
