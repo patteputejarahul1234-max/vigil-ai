@@ -218,6 +218,15 @@ export const proofApi = {
   },
 }
 
+export interface AssistantAnswer {
+  answer: string
+}
+
+export const assistantApi = {
+  ask: (workspaceId: number, question: string) =>
+    api.post<AssistantAnswer>(`/api/workspaces/${workspaceId}/assistant/ask`, { question }),
+}
+
 export const notificationApi = {
   list: (unreadOnly = false) =>
     api.get<AppNotificationDto[]>('/api/notifications', { params: { unreadOnly } }),

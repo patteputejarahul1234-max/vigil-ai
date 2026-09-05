@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { assistantApi, Project, projectApi, Workspace, workspaceApi, WorkspaceMemberDto } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { FormField, PrimaryButton } from '../components/FormField'
-import { projectApi, workspaceApi, Project, Workspace, WorkspaceMemberDto } from '../api/client'
 
 export default function WorkspaceDetail() {
   const { workspaceId } = useParams()
@@ -17,6 +17,9 @@ export default function WorkspaceDetail() {
   const [projectName, setProjectName] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
   const [error, setError] = useState('')
+  const [assistantQuestion, setAssistantQuestion] = useState('')
+  const [assistantAnswer, setAssistantAnswer] = useState('')
+  const [asking, setAsking] = useState(false)
 
   function load() {
     workspaceApi.get(id).then((res) => setWorkspace(res.data))
@@ -44,6 +47,18 @@ export default function WorkspaceDetail() {
       load()
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Could not add this member')
+    }
+  }
+
+  async function handleAskAssistant(e: React.FormEvent) {
+    e.preventDefault()
+    setAsking(true)
+    setAssistantAnswer('')
+    try {
+      const res = await assistantApi.ask(id, assistantQuestion)
+      setAssistantAnswer(res.data.answer)
+    } finally {
+      setAsking(false)
     }
   }
 
@@ -136,6 +151,38 @@ export default function WorkspaceDetail() {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="bg-ink-surface border border-signal-teal/30 rounded-2xl p-6 mt-8">
+        <h2 className="font-display font-semibold flex items-center gap-2 mb-1">
+          <span className="w-2 h-2 rounded-full bg-signal-teal animate-pulse" />
+          Ask Vigil AI
+        </h2>
+        <p className="text-text-muted text-sm mb-4">
+          Ask anything about your tasks in this workspace — grounded in your real data, not guesses.
+        </p>
+
+        <form onSubmit={handleAskAssistant} className="flex gap-3 mb-4">
+          <input
+            value={assistantQuestion}
+            onChange={(e) => setAssistantQuestion(e.target.value)}
+            placeholder="What should I focus on today?"
+            className="flex-1 bg-ink border border-ink-border rounded-lg px-3.5 py-2.5 text-sm focus:border-signal-teal outline-none"
+          />
+          <button
+            type="submit"
+            disabled={asking || !assistantQuestion.trim()}
+            className="bg-signal-teal text-ink font-semibold rounded-lg px-4 py-2.5 text-sm hover:brightness-110 disabled:opacity-50 whitespace-nowrap"
+          >
+            {asking ? 'Thinking…' : 'Ask'}
+          </button>
+        </form>
+
+        {assistantAnswer && (
+          <div className="bg-ink border border-ink-border rounded-lg px-4 py-3 text-sm text-text-primary">
+            {assistantAnswer}
+          </div>
+        )}
       </div>
     </AppShell>
   )
