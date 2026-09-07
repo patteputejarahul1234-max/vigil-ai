@@ -1,7 +1,5 @@
 package com.vigilai.config;
-
-import com.vigilai.security.JwtAuthFilter;
-import com.vigilai.service.CustomUserDetailsService;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +19,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import com.vigilai.security.JwtAuthFilter;
+import com.vigilai.service.CustomUserDetailsService;
 
 @Configuration
 @EnableWebSecurity
@@ -52,7 +51,7 @@ public class SecurityConfig {
         "/swagger-ui/**",
         "/v3/api-docs/**",
         "/h2-console/**",
-        "/actuator/health"
+        
     };
 
     @Bean

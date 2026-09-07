@@ -21,3 +21,5 @@ frontend/.env
 .DS_Store
 
 k8s/secrets.yaml
+
+*.tsbuildinfo
