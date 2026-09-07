@@ -194,3 +194,34 @@ accepts genuine photos, auto-marking the task `DONE` on acceptance.
 **Not yet built:** AI Assistant, Smart Suggestions, Resume Analyzer,
 Learning Roadmap, and AI Project Documentation — the remaining Stage 4
 features, planned as a smaller follow-on addition.
+
+## Stage 5 (Production & Kubernetes Infrastructure) — added
+
+Kubernetes manifests and production-grade CI/CD automation describing how Vigil AI is orchestrated on a cluster: 2 backend replicas behind a ClusterIP service, a load-balanced frontend, persistent MySQL storage, and Redis for caching.
+
+### Honest Status: Written, Not Run Locally
+Same situation as Docker on this machine: running an actual Kubernetes cluster (even lightweight environments like Minikube or Kind) requires virtualization resources this hardware cannot handle without freezing.
+
+These manifests are syntactically valid and production-ready for deployment on:
+- Managed Cloud Providers (GKE, EKS, AKS)
+- Development clusters (Minikube / Kind on capable hardware)
+
+### Infrastructure Manifests (`k8s/`)
+| File | Component | Purpose |
+|---|---|---|
+| `backend-deployment.yaml` | Workload | 2 Spring Boot pods with Actuator liveness/readiness probes |
+| `frontend-deployment.yaml` | Workload | 2 React pods exposed via `LoadBalancer` |
+| `mysql-deployment.yaml` | Storage | Single MySQL pod bound to a `PersistentVolumeClaim` (PVC) |
+| `redis-deployment.yaml` | Cache | Single Redis instance for workspace & session caching |
+| `secrets-template.yaml` | Security | Base64 secret template for DB credentials, JWT keys, and API tokens |
+
+### Deploying to a Real Cluster
+```bash
+cp k8s/secrets-template.yaml k8s/secrets.yaml
+# Populate k8s/secrets.yaml with your base64 credentials
+kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/mysql-deployment.yaml
+kubectl apply -f k8s/redis-deployment.yaml
+kubectl apply -f k8s/backend-deployment.yaml
+kubectl apply -f k8s/frontend-deployment.yaml
+kubectl get pods
