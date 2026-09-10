@@ -26,6 +26,7 @@ public class TaskService {
     private final NotificationService notificationService;
     private final ActivityLogService activityLogService;
     private final CacheManager cacheManager;
+    private final WorkspaceEventPublisher eventPublisher;
 
     public TaskService(
             TaskRepository taskRepository,
@@ -34,7 +35,8 @@ public class TaskService {
             WorkspaceService workspaceService,
             NotificationService notificationService,
             ActivityLogService activityLogService,
-            CacheManager cacheManager
+            CacheManager cacheManager,
+            WorkspaceEventPublisher eventPublisher
     ) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
@@ -43,6 +45,7 @@ public class TaskService {
         this.notificationService = notificationService;
         this.activityLogService = activityLogService;
         this.cacheManager = cacheManager;
+        this.eventPublisher = eventPublisher;
     }
 
     /** Analytics numbers change on every task write, so evict rather than let the TTL alone handle it. */
@@ -77,7 +80,9 @@ public class TaskService {
                 "Created task \"" + task.getTitle() + "\"");
         evictAnalytics(project.getWorkspaceId());
 
-        return toResponse(task);
+        TaskResponse response = toResponse(task);
+        eventPublisher.publish(project.getWorkspaceId(), "TASK_CREATED", response);
+        return response;
     }
 
     public List<TaskResponse> getForProject(Long projectId, Long userId) {
@@ -127,7 +132,10 @@ public class TaskService {
         }
 
         evictAnalytics(project.getWorkspaceId());
-        return toResponse(task);
+
+        TaskResponse response = toResponse(task);
+        eventPublisher.publish(project.getWorkspaceId(), "TASK_UPDATED", response);
+        return response;
     }
 
     @Transactional
@@ -140,6 +148,8 @@ public class TaskService {
         activityLogService.log(project.getWorkspaceId(), userId, "TASK_DELETED", "TASK", taskId,
                 "Deleted task \"" + task.getTitle() + "\"");
         evictAnalytics(project.getWorkspaceId());
+
+        eventPublisher.publish(project.getWorkspaceId(), "TASK_DELETED", java.util.Map.of("taskId", taskId));
     }
 
     /** Powers the Search & Filters feature — dynamic query across any combination of fields. */

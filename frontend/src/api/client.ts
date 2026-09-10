@@ -255,3 +255,33 @@ export const analyticsApi = {
   getForWorkspace: (workspaceId: number) =>
     api.get<AnalyticsSummary>(`/api/workspaces/${workspaceId}/analytics`),
 }
+
+export interface LeaderboardEntry {
+  userId: number
+  fullName: string
+  email: string
+  avatarUrl?: string
+  currentStreak: number
+  longestStreak: number
+  totalVerifiedTasks: number
+  accountabilityScore: number
+  rank: number
+  badge: string
+}
+
+export interface UserStats {
+  id: number
+  userId: number
+  currentStreak: number
+  longestStreak: number
+  lastCompletedDate?: string
+  totalVerifiedTasks: number
+  accountabilityScore: number
+}
+
+export const leaderboardApi = {
+  getForWorkspace: (workspaceId: number) =>
+    api.get<LeaderboardEntry[]>(`/api/workspaces/${workspaceId}/leaderboard`),
+  getMyStats: () => api.get<UserStats>('/api/users/me/stats'),
+}
+

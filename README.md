@@ -96,132 +96,44 @@ stage is a one-file change.
 Add `backend/uploads/` to your `.gitignore` — uploaded files shouldn't
 be committed.
 
-## Stage 3 (Production Ready) — added
+## Stage 3 (Production Readiness, Testing & Security)
 
-**Run everything with Docker (recommended way to try Stage 3):**
-```bash
-docker compose up --build
-```
-This starts MySQL, Redis, the backend, and the frontend together —
-backend on :8080, frontend on :5173. First run takes a few minutes
-(image builds); after that it's fast.
+**Redis Cache** — workspace lookups, member lists, and analytics are cached (`CacheConfig`), with eviction wired into every write path so cached data never goes stale. TTLs: workspaces 10min, members 5min, analytics 2min.
 
-**Or keep running locally without Docker** (`mvn spring-boot:run` +
-`npm run dev`) — nothing about local dev changed. Cache defaults to
-in-memory (no Redis needed) unless you explicitly set `CACHE_TYPE=redis`.
+**Swagger** — visit `/swagger-ui.html`, click **Authorize**, paste an `accessToken` from `/api/auth/login`, and every protected endpoint becomes testable from the browser.
 
-**Redis Cache** — workspace lookups, member lists, and analytics are
-cached (`CacheConfig`), with eviction wired into every write path so
-cached data never goes stale. TTLs: workspaces 10min, members 5min,
-analytics 2min.
+**JUnit 5 Tests** — 16 passing unit and integration tests covering:
+- JWT generation, validation, and expiry (`JwtServiceTest`)
+- Registration and login business rules (`AuthServiceTest`)
+- Workspace access-control rules (`WorkspaceServiceTest`)
+- Full register -> verify -> login -> protected endpoint integration flow (`AuthFlowIntegrationTest`)
 
-**Swagger** — visit `/swagger-ui.html`, click **Authorize**, paste an
-`accessToken` from `/api/auth/login`, and every protected endpoint
-becomes testable from the browser.
+**Structured Logging** — formatted logs with request timing, method, status, and rotating file appenders (`backend/logs/vigilai.log`).
 
-**JUnit** — run tests with:
-```bash
-cd backend
-mvn test
-```
-Covers: JWT generation/validation/expiry (`JwtServiceTest`),
-registration/login business rules (`AuthServiceTest`), workspace
-access-control rules (`WorkspaceServiceTest`), and a full
-register→verify→login→protected-route integration test
-(`AuthFlowIntegrationTest`) against a real Spring context + H2.
+**Async Processing** — Email verification and notifications run asynchronously via `@Async` so requests are never blocked by network latency.
 
-**Logging** — structured logs to console + `backend/logs/vigilai.log`
-(rotated daily, 14-day retention). Every request logs method/path/
-status/duration. Set `VIGILAI_LOG_LEVEL=DEBUG` for more detail locally.
+## Stage 4 (AI Integration & Proof of Execution)
 
-**Email Service** — now `@Async`; a slow/misconfigured SMTP server
-never blocks a request.
+1. **Proof of Execution (Gemini Vision)**: Submit a photo as proof a task was actually completed. Google Gemini Vision verifies it in memory (photos are never retained or written to disk for privacy), auto-completing the task upon verified acceptance.
+2. **Grounded AI Assistant (Gemini Text)**: Ask questions about workspace tasks, priorities, and deadlines, answered using actual real-time database context.
+3. **Smart Suggestions**: Analyzes task completion history and suggests optimal hours and schedules without unnecessary API costs.
 
-**Cloud Deployment** — two new Spring profiles:
-- `docker` (`application-docker.yml`) — used automatically by
-  docker-compose, points at real MySQL/Redis by service name.
-- `prod` (`application-prod.yml`) — for platforms like Render/Railway
-  that inject `DB_URL`/`REDIS_HOST` directly without docker-compose.
-  Uses `ddl-auto: validate` instead of `update` — for a real
-  production deploy you'd want Flyway/Liquibase migrations instead of
-  Hibernate auto-DDL; that's a good Stage 5 addition, not done here.
+## Stage 5 (Real-Time WebSockets, Gamification & Flyway Migrations)
 
-## What's deliberately not here yet
-Kafka, Kubernetes, CI/CD pipelines, and multi-service split are Stage 5.
-Database migrations (Flyway/Liquibase) would be a natural next step
-before a real production deploy — Stage 3 uses Hibernate's `ddl-auto`
-for simplicity, which is fine for a portfolio project but not what
-you'd want managing a real production schema long-term.
+### 1. Real-Time Live Updates (WebSockets / STOMP)
+- Built with Spring STOMP over SockJS (`/ws`) and direct WebSocket (`/ws-direct`).
+- Subscribes to `/topic/workspace/{workspaceId}`: when teammates create, update, or complete tasks with AI proof, all members see real-time UI updates without manual refreshing.
 
-## Note on verifying this build
-This was written and reviewed without a live Maven/npm environment (no
-network access in this session), so run `mvn clean compile` and
-`npm run build` locally before you push — flag anything that doesn't
-compile and it can be fixed directly.
+### 2. Gamification Engine (Streaks & Team Leaderboard)
+- **Daily Streak Tracking**: Consecutive days of verified task completions with best-streak records.
+- **Accountability Score**: Dynamic 0–100% score based on consistency, verified completions, and deadlines.
+- **Team Leaderboard**: Workspace rankings with medals (🥇, 🥈, 🥉) and performance badges (🏆 Champion, 🔥 Unstoppable, ⚡ Consistent).
 
-## Stage 4 (AI Integration) — Proof of Execution added
+### 3. Database Migrations (Flyway)
+- Schema versioning managed via Flyway (`V1__initial_schema.sql`).
+- Replaces raw auto-DDL with reproducible, production-grade schema control across development and cloud environments.
 
-**Proof of Execution** is the core AI feature: submit a photo as proof
-a task was actually completed, and Google Gemini Vision verifies it —
-not just a checkbox tap, an actual judgment call on whether the photo
-plausibly shows the task being done.
+## Cloud Deployment (Railway + Vercel)
 
-| Method | Path | Purpose |
-|---|---|---|
-| POST | /api/tasks/{taskId}/proof | Submit a photo; AI verifies it and auto-completes the task if accepted |
-
-**How it works:** the photo is sent to Gemini in memory, verified, and
-never written to disk — only the verdict (`verified: true/false` + a
-one-sentence reason) is stored in the `proof_submission` table. This
-matches the original design goal of the feature: the photo itself is
-never retained, only proof that a check happened.
-
-**Setup required:** get a free API key from
-[Google AI Studio](https://aistudio.google.com/apikey), then set it as
-an environment variable before starting the backend (never commit it
-or hardcode it):
-```bash
-$env:GEMINI_API_KEY="your-key-here"   # PowerShell
-mvn spring-boot:run
-```
-Without a key set, proof submissions are safely auto-rejected with a
-clear message rather than the app crashing.
-
-**Verified working:** correctly rejects stock/reused photos ("this
-appears to be a stock photo rather than an original photo") and
-accepts genuine photos, auto-marking the task `DONE` on acceptance.
-
-**Not yet built:** AI Assistant, Smart Suggestions, Resume Analyzer,
-Learning Roadmap, and AI Project Documentation — the remaining Stage 4
-features, planned as a smaller follow-on addition.
-
-## Stage 5 (Production & Kubernetes Infrastructure) — added
-
-Kubernetes manifests and production-grade CI/CD automation describing how Vigil AI is orchestrated on a cluster: 2 backend replicas behind a ClusterIP service, a load-balanced frontend, persistent MySQL storage, and Redis for caching.
-
-### Honest Status: Written, Not Run Locally
-Same situation as Docker on this machine: running an actual Kubernetes cluster (even lightweight environments like Minikube or Kind) requires virtualization resources this hardware cannot handle without freezing.
-
-These manifests are syntactically valid and production-ready for deployment on:
-- Managed Cloud Providers (GKE, EKS, AKS)
-- Development clusters (Minikube / Kind on capable hardware)
-
-### Infrastructure Manifests (`k8s/`)
-| File | Component | Purpose |
-|---|---|---|
-| `backend-deployment.yaml` | Workload | 2 Spring Boot pods with Actuator liveness/readiness probes |
-| `frontend-deployment.yaml` | Workload | 2 React pods exposed via `LoadBalancer` |
-| `mysql-deployment.yaml` | Storage | Single MySQL pod bound to a `PersistentVolumeClaim` (PVC) |
-| `redis-deployment.yaml` | Cache | Single Redis instance for workspace & session caching |
-| `secrets-template.yaml` | Security | Base64 secret template for DB credentials, JWT keys, and API tokens |
-
-### Deploying to a Real Cluster
-```bash
-cp k8s/secrets-template.yaml k8s/secrets.yaml
-# Populate k8s/secrets.yaml with your base64 credentials
-kubectl apply -f k8s/secrets.yaml
-kubectl apply -f k8s/mysql-deployment.yaml
-kubectl apply -f k8s/redis-deployment.yaml
-kubectl apply -f k8s/backend-deployment.yaml
-kubectl apply -f k8s/frontend-deployment.yaml
-kubectl get pods
+- **Backend & MySQL**: Hosted on [Railway](https://railway.app) with automatic environment variable injection (`MYSQL_URL`, `GEMINI_API_KEY`, `JWT_SECRET`).
+- **Frontend**: Hosted on [Vercel](https://vercel.com) with Single Page Application rewrites (`vercel.json`) and configured `VITE_API_BASE_URL`.

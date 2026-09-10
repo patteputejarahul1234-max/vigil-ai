@@ -30,6 +30,8 @@ public class ProofService {
     private final WorkspaceService workspaceService;
     private final ActivityLogService activityLogService;
     private final NotificationService notificationService;
+    private final AccountabilityService accountabilityService;
+    private final WorkspaceEventPublisher eventPublisher;
 
     public ProofService(
             TaskRepository taskRepository,
@@ -38,7 +40,9 @@ public class ProofService {
             GeminiVisionService geminiVisionService,
             WorkspaceService workspaceService,
             ActivityLogService activityLogService,
-            NotificationService notificationService
+            NotificationService notificationService,
+            AccountabilityService accountabilityService,
+            WorkspaceEventPublisher eventPublisher
     ) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
@@ -47,6 +51,8 @@ public class ProofService {
         this.workspaceService = workspaceService;
         this.activityLogService = activityLogService;
         this.notificationService = notificationService;
+        this.accountabilityService = accountabilityService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -93,6 +99,8 @@ public class ProofService {
             task.setStatus(TaskStatus.DONE);
             taskRepository.save(task);
 
+            accountabilityService.recordVerifiedCompletion(userId, project.getWorkspaceId());
+
             activityLogService.log(project.getWorkspaceId(), userId, "PROOF_VERIFIED", "TASK", taskId,
                     "AI verified proof for \"" + task.getTitle() + "\": " + result.reason());
 
@@ -100,9 +108,21 @@ public class ProofService {
                 notificationService.notify(task.getAssigneeId(), NotificationType.TASK_STATUS_CHANGED,
                         "Proof accepted — \"" + task.getTitle() + "\" marked done", "TASK", taskId);
             }
+
+            eventPublisher.publish(project.getWorkspaceId(), "PROOF_VERIFIED", java.util.Map.of(
+                    "taskId", taskId,
+                    "verified", true,
+                    "reason", result.reason()
+            ));
         } else {
             activityLogService.log(project.getWorkspaceId(), userId, "PROOF_REJECTED", "TASK", taskId,
                     "AI rejected proof for \"" + task.getTitle() + "\": " + result.reason());
+
+            eventPublisher.publish(project.getWorkspaceId(), "PROOF_REJECTED", java.util.Map.of(
+                    "taskId", taskId,
+                    "verified", false,
+                    "reason", result.reason()
+            ));
         }
 
         return ProofSubmissionResponse.builder()

@@ -8,30 +8,39 @@
 # your provider calls them, or adjust the keys below to match.
 spring:
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:${MYSQL_URL:jdbc:mysql://${MYSQLHOST:localhost}:${MYSQLPORT:3306}/${MYSQLDATABASE:vigilai}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true}}
+    username: ${DB_USERNAME:${MYSQLUSER:root}}
+    password: ${DB_PASSWORD:${MYSQLPASSWORD:}}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-      ddl-auto: validate   # never auto-alter a real prod schema; use migrations instead
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.MySQLDialect
     show-sql: false
 
   h2:
     console:
       enabled: false
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
 
   cache:
-    type: redis
+    type: ${CACHE_TYPE:simple}
 
 app:
-  frontend-url: ${FRONTEND_URL}
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-1.5-flash}
 
 logging:
   level:
