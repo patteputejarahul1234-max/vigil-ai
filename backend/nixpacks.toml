@@ -1,0 +1,9 @@
+# Nixpacks configuration for Railway deployment (backend directory)
+[phases.setup]
+nixPkgs = ["jdk21", "maven"]
+
+[phases.build]
+cmds = ["mvn clean package -DskipTests"]
+
+[start]
+cmd = "java -Dserver.port=$PORT -jar target/vigilai-backend-0.1.0.jar"

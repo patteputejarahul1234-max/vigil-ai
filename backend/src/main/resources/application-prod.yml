@@ -5,7 +5,9 @@
 #
 # Most platforms give a single DATABASE_URL rather than separate
 # host/user/password — set DB_URL/DB_USERNAME/DB_PASSWORD to whatever
-# your provider calls them, or adjust the keys below to match.
+server:
+  port: ${PORT:8080}
+
 spring:
   datasource:
     url: ${DB_URL:${MYSQL_URL:jdbc:mysql://${MYSQLHOST:localhost}:${MYSQLPORT:3306}/${MYSQLDATABASE:vigilai}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true}}

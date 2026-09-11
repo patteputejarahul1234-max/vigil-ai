@@ -23,3 +23,4 @@ frontend/.env
 k8s/secrets.yaml
 
 *.tsbuildinfo
+powershell.cmd
