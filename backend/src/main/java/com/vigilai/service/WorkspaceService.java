@@ -1,5 +1,6 @@
 package com.vigilai.service;
 
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -172,13 +173,19 @@ public class WorkspaceService {
 
     private WorkspaceResponse toResponse(Workspace workspace) {
         int memberCount = memberRepository.findByWorkspaceId(workspace.getId()).size();
+        
+        // Convert LocalDateTime to Instant safely for response DTO
+        var createdAtInstant = workspace.getCreatedAt() != null 
+                ? workspace.getCreatedAt().toInstant(ZoneOffset.UTC) 
+                : null;
+
         return WorkspaceResponse.builder()
                 .id(workspace.getId())
                 .name(workspace.getName())
                 .description(workspace.getDescription())
                 .ownerId(workspace.getOwnerId())
                 .memberCount(memberCount)
-                .createdAt(workspace.getCreatedAt())
+                .createdAt(createdAtInstant)
                 .build();
     }
 }
