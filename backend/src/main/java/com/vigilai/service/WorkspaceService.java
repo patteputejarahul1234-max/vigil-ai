@@ -1,27 +1,20 @@
 package com.vigilai.service;
 
-import java.time.ZoneOffset;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.vigilai.dto.*;
+import com.vigilai.entity.*;
+import com.vigilai.exception.ApiException;
+import com.vigilai.repository.UserRepository;
+import com.vigilai.repository.WorkspaceMemberRepository;
+import com.vigilai.repository.WorkspaceRepository;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.vigilai.dto.InviteMemberRequest;
-import com.vigilai.dto.WorkspaceMemberResponse;
-import com.vigilai.dto.WorkspaceRequest;
-import com.vigilai.dto.WorkspaceResponse;
-import com.vigilai.entity.NotificationType;
-import com.vigilai.entity.User;
-import com.vigilai.entity.Workspace;
-import com.vigilai.entity.WorkspaceMember;
-import com.vigilai.entity.WorkspaceRole;
-import com.vigilai.exception.ApiException;
-import com.vigilai.repository.UserRepository;
-import com.vigilai.repository.WorkspaceMemberRepository;
-import com.vigilai.repository.WorkspaceRepository;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class WorkspaceService {
@@ -55,20 +48,21 @@ public class WorkspaceService {
         Workspace workspace = Workspace.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+                .userId(ownerId)
                 .ownerId(ownerId)
                 .build();
         workspace = workspaceRepository.save(workspace);
 
-        Workspace workspace = Workspace.builder()
-        .name(request.getName())
-        .description(request.getDescription())
-        .userId(ownerId)
-        .ownerId(ownerId)
-        .build();
-   workspace = workspaceRepository.save(workspace);
+        memberRepository.save(WorkspaceMember.builder()
+                .workspaceId(workspace.getId())
+                .userId(ownerId)
+                .role(WorkspaceRole.OWNER)
+                .build());
 
-        activityLogService.log(workspace.getId(), ownerId, "WORKSPACE_CREATED", "WORKSPACE", workspace.getId(),
-                "Created workspace \"" + workspace.getName() + "\"");
+        try {
+            activityLogService.log(workspace.getId(), ownerId, "WORKSPACE_CREATED", "WORKSPACE", workspace.getId(),
+                    "Created workspace \"" + workspace.getName() + "\"");
+        } catch (Exception ignored) {}
 
         return toResponse(workspace);
     }
@@ -116,8 +110,10 @@ public class WorkspaceService {
         notificationService.notify(invitee.getId(), NotificationType.WORKSPACE_INVITE,
                 "You were added to workspace \"" + workspace.getName() + "\"", "WORKSPACE", workspaceId);
 
-        activityLogService.log(workspaceId, inviterId, "MEMBER_ADDED", "WORKSPACE", workspaceId,
-                invitee.getEmail() + " joined as " + role);
+        try {
+            activityLogService.log(workspaceId, inviterId, "MEMBER_ADDED", "WORKSPACE", workspaceId,
+                    invitee.getEmail() + " joined as " + role);
+        } catch (Exception ignored) {}
 
         return WorkspaceMemberResponse.builder()
                 .userId(invitee.getId())
@@ -146,8 +142,6 @@ public class WorkspaceService {
                 .collect(Collectors.toList());
     }
 
-    // --- access control helpers, reused by Project/Task services ---
-
     public void assertMember(Long workspaceId, Long userId) {
         if (userId == null || !memberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
             throw ApiException.badRequest("You are not a member of this workspace");
@@ -163,7 +157,7 @@ public class WorkspaceService {
                 .orElseThrow(() -> ApiException.badRequest("You are not a member of this workspace"));
 
         boolean sufficient = switch (minimumRole) {
-            case MEMBER -> true; // any member qualifies
+            case MEMBER -> true;
             case ADMIN -> member.getRole() == WorkspaceRole.ADMIN || member.getRole() == WorkspaceRole.OWNER;
             case OWNER -> member.getRole() == WorkspaceRole.OWNER;
         };
@@ -175,11 +169,11 @@ public class WorkspaceService {
 
     private WorkspaceResponse toResponse(Workspace workspace) {
         int memberCount = memberRepository.findByWorkspaceId(workspace.getId()).size();
-        
-        // Convert LocalDateTime to Instant safely for response DTO
-        var createdAtInstant = workspace.getCreatedAt() != null 
-                ? workspace.getCreatedAt().toInstant(ZoneOffset.UTC) 
-                : null;
+
+        Instant createdAtInstant = null;
+        if (workspace.getCreatedAt() != null) {
+            createdAtInstant = workspace.getCreatedAt().toInstant(ZoneOffset.UTC);
+        }
 
         return WorkspaceResponse.builder()
                 .id(workspace.getId())

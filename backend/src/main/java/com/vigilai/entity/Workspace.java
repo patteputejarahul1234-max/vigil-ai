@@ -21,7 +21,7 @@ public class Workspace {
 
     private String description;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id")
     private Long userId;
 
     @Column(name = "owner_id")
