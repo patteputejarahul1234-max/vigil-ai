@@ -59,11 +59,13 @@ public class WorkspaceService {
                 .build();
         workspace = workspaceRepository.save(workspace);
 
-        memberRepository.save(WorkspaceMember.builder()
-                .workspaceId(workspace.getId())
-                .userId(ownerId)
-                .role(WorkspaceRole.OWNER)
-                .build());
+        Workspace workspace = Workspace.builder()
+        .name(request.getName())
+        .description(request.getDescription())
+        .userId(ownerId)
+        .ownerId(ownerId)
+        .build();
+   workspace = workspaceRepository.save(workspace);
 
         activityLogService.log(workspace.getId(), ownerId, "WORKSPACE_CREATED", "WORKSPACE", workspace.getId(),
                 "Created workspace \"" + workspace.getName() + "\"");

@@ -21,7 +21,10 @@ public class Workspace {
 
     private String description;
 
-    @Column(name = "owner_id", nullable = false)
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @Column(name = "owner_id")
     private Long ownerId;
 
     @Column(name = "created_at", updatable = false)
@@ -30,5 +33,10 @@ public class Workspace {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.userId == null && this.ownerId != null) {
+            this.userId = this.ownerId;
+        } else if (this.ownerId == null && this.userId != null) {
+            this.ownerId = this.userId;
+        }
     }
 }
