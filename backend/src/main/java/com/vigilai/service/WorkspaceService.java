@@ -1,18 +1,26 @@
 package com.vigilai.service;
 
-import com.vigilai.dto.*;
-import com.vigilai.entity.*;
-import com.vigilai.exception.ApiException;
-import com.vigilai.repository.UserRepository;
-import com.vigilai.repository.WorkspaceMemberRepository;
-import com.vigilai.repository.WorkspaceRepository;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.vigilai.dto.InviteMemberRequest;
+import com.vigilai.dto.WorkspaceMemberResponse;
+import com.vigilai.dto.WorkspaceRequest;
+import com.vigilai.dto.WorkspaceResponse;
+import com.vigilai.entity.NotificationType;
+import com.vigilai.entity.User;
+import com.vigilai.entity.Workspace;
+import com.vigilai.entity.WorkspaceMember;
+import com.vigilai.entity.WorkspaceRole;
+import com.vigilai.exception.ApiException;
+import com.vigilai.repository.UserRepository;
+import com.vigilai.repository.WorkspaceMemberRepository;
+import com.vigilai.repository.WorkspaceRepository;
 
 @Service
 public class WorkspaceService {
@@ -39,6 +47,10 @@ public class WorkspaceService {
 
     @Transactional
     public WorkspaceResponse create(Long ownerId, WorkspaceRequest request) {
+        if (ownerId == null) {
+            throw ApiException.badRequest("User ID (ownerId) cannot be null when creating a workspace.");
+        }
+
         Workspace workspace = Workspace.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -59,6 +71,9 @@ public class WorkspaceService {
     }
 
     public List<WorkspaceResponse> getForUser(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
         return memberRepository.findByUserId(userId).stream()
                 .map(m -> workspaceRepository.findById(m.getWorkspaceId()).orElse(null))
                 .filter(w -> w != null)
@@ -131,12 +146,16 @@ public class WorkspaceService {
     // --- access control helpers, reused by Project/Task services ---
 
     public void assertMember(Long workspaceId, Long userId) {
-        if (!memberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
+        if (userId == null || !memberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
             throw ApiException.badRequest("You are not a member of this workspace");
         }
     }
 
     public void assertRole(Long workspaceId, Long userId, WorkspaceRole minimumRole) {
+        if (userId == null) {
+            throw ApiException.badRequest("User context is missing");
+        }
+
         WorkspaceMember member = memberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
                 .orElseThrow(() -> ApiException.badRequest("You are not a member of this workspace"));
 
