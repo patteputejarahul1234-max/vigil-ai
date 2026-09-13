@@ -1,20 +1,14 @@
 package com.vigilai.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.time.Instant;
-
-/** Join table: who belongs to which workspace, and with what role. */
 @Entity
-@Table(name = "workspace_member", uniqueConstraints = @UniqueConstraint(columnNames = {"workspace_id", "user_id"}))
+@Table(name = "workspace_members")
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class WorkspaceMember {
 
     @Id
@@ -28,14 +22,6 @@ public class WorkspaceMember {
     private Long userId;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private WorkspaceRole role = WorkspaceRole.MEMBER;
-
-    @Column(updatable = false)
-    private Instant joinedAt;
-
-    @PrePersist
-    void onCreate() {
-        joinedAt = Instant.now();
-    }
+    @Column(nullable = false)
+    private WorkspaceRole role;
 }

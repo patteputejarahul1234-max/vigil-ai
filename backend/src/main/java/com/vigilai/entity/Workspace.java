@@ -1,19 +1,15 @@
 package com.vigilai.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.time.Instant;
+import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "workspace")
+@Table(name = "workspaces")
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Workspace {
 
     @Id
@@ -25,14 +21,14 @@ public class Workspace {
 
     private String description;
 
-    @Column(nullable = false)
+    @Column(name = "owner_id", nullable = false)
     private Long ownerId;
 
-    @Column(updatable = false)
-    private Instant createdAt;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @PrePersist
-    void onCreate() {
-        createdAt = Instant.now();
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
     }
 }
