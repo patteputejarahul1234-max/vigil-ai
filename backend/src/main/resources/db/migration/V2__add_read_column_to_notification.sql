@@ -1,0 +1,1 @@
+ALTER TABLE app_notification ADD COLUMN `read` BOOLEAN DEFAULT FALSE;
