@@ -23,20 +23,22 @@ public class TaskAttachment {
     @Column(name = "task_id", nullable = false)
     private Long taskId;
 
-    @Column(nullable = false)
+    @Column(name = "original_filename", nullable = false)
     private String fileName;
 
-    @Column(nullable = false)
+    @Column(name = "stored_filename", nullable = false)
     private String storedPath;
 
+    @Column(name = "content_type")
     private String contentType;
 
+    @Column(name = "file_size", nullable = false)
     private long sizeBytes;
 
-    @Column(nullable = false)
+    @Column(name = "uploaded_by", nullable = false)
     private Long uploadedBy;
 
-    @Column(updatable = false)
+    @Column(name = "uploaded_at", updatable = false)
     private Instant uploadedAt;
 
     @PrePersist
@@ -44,3 +46,4 @@ public class TaskAttachment {
         uploadedAt = Instant.now();
     }
 }
+

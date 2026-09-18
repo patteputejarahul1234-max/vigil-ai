@@ -24,7 +24,7 @@ public class ActivityLog {
     @Column(name = "workspace_id", nullable = false)
     private Long workspaceId;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long actorId;
 
     @Column(nullable = false)

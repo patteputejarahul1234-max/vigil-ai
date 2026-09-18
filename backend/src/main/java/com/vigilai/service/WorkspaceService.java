@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,7 +47,6 @@ public class WorkspaceService {
         Workspace workspace = Workspace.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .userId(ownerId)
                 .ownerId(ownerId)
                 .build();
         workspace = workspaceRepository.save(workspace);
@@ -170,18 +168,13 @@ public class WorkspaceService {
     private WorkspaceResponse toResponse(Workspace workspace) {
         int memberCount = memberRepository.findByWorkspaceId(workspace.getId()).size();
 
-        Instant createdAtInstant = null;
-        if (workspace.getCreatedAt() != null) {
-            createdAtInstant = workspace.getCreatedAt().toInstant(ZoneOffset.UTC);
-        }
-
         return WorkspaceResponse.builder()
                 .id(workspace.getId())
                 .name(workspace.getName())
                 .description(workspace.getDescription())
                 .ownerId(workspace.getOwnerId())
                 .memberCount(memberCount)
-                .createdAt(createdAtInstant)
+                .createdAt(workspace.getCreatedAt())
                 .build();
     }
 }

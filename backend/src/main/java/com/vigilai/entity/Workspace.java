@@ -2,10 +2,10 @@ package com.vigilai.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
-@Table(name = "workspaces")
+@Table(name = "workspace")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,22 +21,14 @@ public class Workspace {
 
     private String description;
 
-    @Column(name = "user_id")
-    private Long userId;
-
-    @Column(name = "owner_id")
+    @Column(name = "owner_id", nullable = false)
     private Long ownerId;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    @Column(updatable = false)
+    private Instant createdAt;
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        if (this.userId == null && this.ownerId != null) {
-            this.userId = this.ownerId;
-        } else if (this.ownerId == null && this.userId != null) {
-            this.ownerId = this.userId;
-        }
+        this.createdAt = Instant.now();
     }
 }
