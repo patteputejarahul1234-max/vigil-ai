@@ -21,8 +21,6 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-    repair-check-exec: true
-    ignore-migration-patterns: "*:missing,*:future,*:ignored,*:pending"
 
   data:
     redis:
